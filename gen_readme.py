@@ -20,6 +20,28 @@ def badges(repo: str) -> str:
     return f"{s} {c}"
 
 
+def hf_model_url(model: str) -> str:
+    return f"https://huggingface.co/{model}"
+
+
+def render_hf_model(e):
+    model = e["model"]
+    url = e.get("url", hf_model_url(model))
+    tags = e["tags"]
+    org = f" *({e['org']})*" if e.get("org") else ""
+    meta = []
+    if e.get("license"):
+        meta.append(f"license: {e['license']}")
+    if e.get("access"):
+        meta.append(f"access: {e['access']}")
+    if e.get("artifacts"):
+        meta.append(f"artifacts: {e['artifacts']}")
+    note = f" *{' · '.join(meta)}.*" if meta else ""
+    if e.get("note"):
+        note = f"{note} {e['note']}" if note else f" {e['note']}"
+    return f"- **[{e['name']}]({url})** {tags} — {e['desc']}{org}{note}"
+
+
 def link(pair):
     label, url = pair
     return f"[{label}]({url})"
@@ -32,6 +54,8 @@ def github_anchor(title: str) -> str:
 
 
 def render_entry(e):
+    if e.get("kind") == "hf_model":
+        return render_hf_model(e)
     repo = e["repo"]
     url = e.get("url", f"https://github.com/{repo}")
     tags = e["tags"]
@@ -49,6 +73,7 @@ def render_entry(e):
 
 # Short reusable link targets
 GH = "https://github.com/"
+HF = "https://huggingface.co/"
 VULNHUNTR = ("Vulnhuntr", GH + "protectai/vulnhuntr")
 XVULNHUNTR = ("xvulnhuntr", GH + "CompassSecurity/xvulnhuntr")
 VULNHUNTR_MOD = ("vulnhuntr-mod", GH + "kxcode/vulnhuntr-mod")
@@ -66,6 +91,12 @@ SWE_AGENT = ("SWE-agent", GH + "SWE-agent/SWE-agent")
 MODELSCAN = ("modelscan", GH + "protectai/modelscan")
 FICKLING = ("Fickling", GH + "trailofbits/fickling")
 PICKLESCAN = ("picklescan", GH + "mmaitre314/picklescan")
+SECLAB_TASKFLOW = ("seclab-taskflow-agent", GH + "GitHubSecurityLab/seclab-taskflow-agent")
+SIGMA_OPTIMIZER = ("SigmaOptimizer", GH + "YusukeJustinNakajima/SigmaOptimizer")
+FRAIM = ("Fraim", GH + "fraim-dev/fraim")
+AI_SOC = ("AI_SOC", GH + "zhadyz/AI_SOC")
+SPIKEE = ("spikee", GH + "ReversecLabs/spikee")
+PROMPTMAP = ("promptmap", GH + "utkusen/promptmap")
 
 # ---------------------------------------------------------------------------
 # Data model: list of (section_title, anchor, intro, body)
@@ -84,10 +115,16 @@ SECTIONS.append((
          "desc": "Two-stage LLM triage (falsifier + red-team pass) of Nuclei JSONL findings via OpenAI-compatible endpoints (vLLM/Ollama).",
          "note": "— **note:** restrictive personal/non-commercial EULA, not a permissive OSS license.",
          "related": [AGENT_AUDIT, ASAMM]},
+        {"name": "seclab-taskflow-agent", "repo": "GitHubSecurityLab/seclab-taskflow-agent", "tags": "🟢", "org": "GitHub Security Lab",
+         "desc": "YAML-driven taskflow agent framework for triaging CodeQL/SAST alerts and filtering false positives.",
+         "related": [SIGMA_OPTIMIZER]},
         {"name": "honeyslop", "repo": "gadievron/honeyslop", "tags": "🟢",
          "desc": "Code-canary decoys to triage AI-hallucinated (\"slop\") vulnerability reports flooding bug-bounty programs."},
         {"name": "nano-analyzer", "repo": "weareaisle/nano-analyzer", "tags": "🟢🔬", "org": "AISLE",
          "desc": "Minimal three-stage LLM pipeline (context → scan → skeptical triage) for zero-day discovery in C/C++."},
+        {"name": "SigmaOptimizer", "repo": "YusukeJustinNakajima/SigmaOptimizer", "tags": "🟢",
+         "desc": "Generates, tests, and refines Sigma rules from real logs with false-positive checking.",
+         "related": [AI_SOC, SECLAB_TASKFLOW]},
         {"name": "ai-soc-triage-assistant", "repo": "pranavibunny/ai-soc-triage-assistant", "tags": "🟢⚠️",
          "desc": "SOC alert triage assistant with prompt-injection guardrails, output validation, and MITRE ATT&CK mapping."},
     ],
@@ -110,12 +147,24 @@ SECTIONS.append((
             {"name": "agent-scan", "repo": "snyk/agent-scan", "tags": "🟢", "org": "Snyk",
              "desc": "Security scanner for AI agents, MCP servers, and agent skills; the successor path for the original Invariant Labs mcp-scan work.",
              "related": [AGUARA, MCP_SCANNER, SKILL_SCANNER]},
+            {"name": "inkog", "repo": "inkog-io/inkog", "tags": "🟢",
+             "desc": "Static security scanner for AI agents across LangChain, LangGraph, CrewAI, AutoGen, and no-code workflows; flags prompt-injection sinks, runaway loops, and missing oversight.",
+             "related": [AGENT_SCAN, AGENTIC_RADAR]},
+            {"name": "AgentShield", "repo": "affaan-m/agentshield", "tags": "🟢",
+             "desc": "Security scanner for AI-agent configurations, MCP servers, hooks, and tool permissions with CLI, GitHub Action, and app workflows.",
+             "related": [AGENT_AUDIT, AGENT_SCAN]},
+            {"name": "repo-forensics", "repo": "alexgreensh/repo-forensics", "tags": "🟢⚠️",
+             "desc": "Offline scanner for AI-agent repos, skills, plugins, and MCP servers; license is PolyForm Noncommercial.",
+             "related": [AGENT_AUDIT, AGUARA]},
             {"name": "skill-scanner", "repo": "cisco-ai-defense/skill-scanner", "tags": "🟠", "org": "Cisco AI Defense",
              "desc": "Scanner for agent skills combining YAML + YARA patterns, LLM-as-a-judge, and behavioral dataflow analysis (Codex / Cursor skill formats).",
              "related": [("defenseclaw", GH + "cisco-ai-defense/defenseclaw"), AGUARA, MCP_SCANNER]},
             {"name": "mcp-scanner", "repo": "cisco-ai-defense/mcp-scanner", "tags": "🟢⚠️", "org": "Cisco AI Defense",
              "desc": "Scanner for MCP servers and agentic tool surfaces, covering tools, prompts, resources, package risk, malware indicators, and deployment readiness.",
              "related": [SKILL_SCANNER, AGENT_SCAN, AGUARA]},
+            {"name": "mcp-guardian", "repo": "alexandriashai/mcp-guardian", "tags": "🟢",
+             "desc": "JS/TS library and CLI for detecting prompt injection in MCP tool descriptions and pinning tool definitions.",
+             "related": [MCP_SCANNER, AGENT_SCAN]},
             {"name": "agentic-radar", "repo": "splx-ai/agentic-radar", "tags": "🟠", "org": "SplxAI",
              "desc": "CLI security scanner for agentic workflows (LangGraph, CrewAI, n8n, etc.) — maps tools/data flows and flags risks."},
         ]),
@@ -141,6 +190,12 @@ SECTIONS.append((
             {"name": "defenseclaw", "repo": "cisco-ai-defense/defenseclaw", "tags": "🟠", "org": "Cisco AI Defense",
              "desc": "Enforcement and evidence layer for agentic deployments: static CodeGuard checks, sandboxing, registry ingestion with SSRF guards, and audit/observability.",
              "related": [SKILL_SCANNER, AGENTGUARD]},
+            {"name": "AgentFence", "repo": "agentfence/agentfence", "tags": "🟢",
+             "desc": "Runtime-oriented test harness for deployed agents, probing prompt injection, secret leakage, and system-instruction exposure.",
+             "related": [AGENTGUARD, AGENT_SCAN]},
+            {"name": "clawsec", "repo": "prompt-security/clawsec", "tags": "🟢⚠️", "org": "Prompt Security",
+             "desc": "Security skill suite for OpenClaw-family agents; AGPL-3.0 licensed.",
+             "related": [AGENTGUARD, SKILL_SCANNER]},
         ]),
     ],
     None,
@@ -151,6 +206,9 @@ SECTIONS.append((
     "aiml-supply-chain--model-security",
     "Tools for securing model artifacts, serialized ML files, and AI/ML supply-chain surfaces.",
     [
+        {"name": "Fraim", "repo": "fraim-dev/fraim", "tags": "🟢",
+         "desc": "Framework for AI-powered security workflows including LLM SAST and IaC analysis with SARIF/HTML output.",
+         "related": [("sast-skills", GH + "utkusen/sast-skills")]},
         {"name": "modelscan", "repo": "protectai/modelscan", "tags": "🟢", "org": "Protect AI",
          "desc": "Scans ML model files for unsafe serialization patterns and embedded code, with a focus on model serialization attacks.",
          "related": [FICKLING, PICKLESCAN, ("ai-exploits", GH + "protectai/ai-exploits")]},
@@ -160,6 +218,18 @@ SECTIONS.append((
         {"name": "picklescan", "repo": "mmaitre314/picklescan", "tags": "🟢",
          "desc": "Lightweight CLI/library for detecting suspicious Python pickle operations in ML and model artifacts.",
          "related": [MODELSCAN, FICKLING]},
+        {"name": "AIsbom", "repo": "Lab700xOrg/aisbom", "tags": "🟢",
+         "desc": "AI software bill of materials tooling for AI/ML supply-chain inventory and provenance metadata.",
+         "related": [MODELSCAN, ("model-provenance-kit", GH + "cisco-ai-defense/model-provenance-kit")]},
+        {"name": "model-provenance-kit", "repo": "cisco-ai-defense/model-provenance-kit", "tags": "🟢", "org": "Cisco AI Defense",
+         "desc": "Toolkit for model-family provenance and fingerprinting across model weights, tokenizers, and architecture signals.",
+         "related": [("AIsbom", GH + "Lab700xOrg/aisbom")]},
+        {"name": "pickle-fuzzer", "repo": "cisco-ai-defense/pickle-fuzzer", "tags": "🟢", "org": "Cisco AI Defense",
+         "desc": "Structure-aware fuzzer for pickle scanners, useful for hardening tools such as modelscan, Fickling, and picklescan.",
+         "related": [MODELSCAN, FICKLING, PICKLESCAN]},
+        {"name": "Medusa", "repo": "Pantheon-Security/medusa", "tags": "🟢⚠️", "org": "Pantheon Security",
+         "desc": "AI-first security scanner for AI/ML repos, agents, and MCP surfaces; AGPL-3.0 licensed.",
+         "related": [AGENT_AUDIT, MODELSCAN]},
     ],
     None,
 ))
@@ -183,8 +253,20 @@ SECTIONS.append((
          "desc": "AI pentesting CLI assistant with local-LLM support (Llama-3.1, Mistral, DeepSeek)."},
         {"name": "HexStrike-AI", "repo": "0x4m4/hexstrike-ai", "tags": "🟢",
          "desc": "MCP server exposing 150+ security tools (nmap, gobuster, nuclei, …) to AI agents (MIT)."},
+        {"name": "pentest-ai", "repo": "0xSteph/pentest-ai", "tags": "🟢",
+         "desc": "Offensive-security MCP server with 200+ wrapped tools, specialist agents, and OWASP-oriented probes for authorized testing.",
+         "related": [("pentest-ai-agents", GH + "0xSteph/pentest-ai-agents")]},
+        {"name": "pentest-ai-agents", "repo": "0xSteph/pentest-ai-agents", "tags": "🟢",
+         "desc": "Collection of Claude Code offensive-security subagents for authorized penetration-testing research.",
+         "related": [("pentest-ai", GH + "0xSteph/pentest-ai")]},
         {"name": "Shannon", "repo": "KeygraphHQ/shannon", "tags": "🟢",
          "desc": "White-box autonomous AI pentester with strong XBOW-benchmark results."},
+        {"name": "AIDA", "repo": "Vasco0x4/AIDA", "tags": "🟢⚠️",
+         "desc": "Model-agnostic autonomous pentest agent running inside an isolated Docker environment; AGPL-3.0 licensed."},
+        {"name": "HackSynth", "repo": "aielte-research/HackSynth", "tags": "🟢🔬⚠️",
+         "desc": "Planner/summarizer LLM-agent framework for autonomous penetration testing and benchmark evaluation; AGPL-3.0 licensed."},
+        {"name": "VulnBot", "repo": "KHenryAegis/VulnBot", "tags": "🟢🔬",
+         "desc": "Multi-agent collaborative penetration-testing framework with RAG support."},
         {"name": "PentestAgent", "repo": "GH05TCREW/pentestagent", "tags": "🟢",
          "desc": "Black-box AI pentest framework with MCP, multi-agent spawning, and persistent sessions."},
         {"name": "cyber-security-llm-agents", "repo": "NVISOsecurity/cyber-security-llm-agents", "tags": "🟢⚠️", "org": "NVISO",
@@ -209,6 +291,16 @@ SECTIONS.append((
          "desc": "Official Claude-based semantic SAST GitHub Action that reviews PR diffs."},
         {"name": "IRIS", "repo": "iris-sast/iris", "tags": "🟢🔬",
          "desc": "Neurosymbolic SAST combining LLMs with CodeQL for Java vulnerability detection (MIT)."},
+        {"name": "sast-skills", "repo": "utkusen/sast-skills", "tags": "🟢",
+         "desc": "Agent skills that turn AI coding assistants into a multi-agent SAST scanner.",
+         "related": [FRAIM, ("llm-sast-scanner", GH + "SunWeb3Sec/llm-sast-scanner")]},
+        {"name": "llm-sast-scanner", "repo": "SunWeb3Sec/llm-sast-scanner", "tags": "🟢",
+         "desc": "SAST skill for AI coding agents with structured source-to-sink analysis across 34 vulnerability classes.",
+         "note": "*License: MIT stated in README.*",
+         "related": [("sast-skills", GH + "utkusen/sast-skills")]},
+        {"name": "sast-ai-workflow", "repo": "RHEcosystemAppEng/sast-ai-workflow", "tags": "🟢", "org": "Red Hat Ecosystem AppEng",
+         "desc": "LangGraph workflow for reviewing static-analysis findings, reducing false positives, and producing vulnerability review output.",
+         "related": [SECLAB_TASKFLOW, FRAIM]},
         {"name": "xvulnhuntr", "repo": "CompassSecurity/xvulnhuntr", "tags": "🟢", "org": "Compass Security",
          "desc": "Archived fork of Vulnhuntr extending support to C#, Java, and Go.",
          "sources": [VULNHUNTR], "related": [VULNHUNTR_MOD]},
@@ -245,6 +337,12 @@ SECTIONS.append((
              "desc": "System-prompt hardening fuzzer; 16 attacks × 16 providers."},
             {"name": "FuzzyAI", "repo": "cyberark/FuzzyAI", "tags": "🟠", "org": "CyberArk",
              "desc": "Automated LLM fuzzer for jailbreaks/prompt injection."},
+            {"name": "spikee", "repo": "ReversecLabs/spikee", "tags": "🟢", "org": "ReversecLabs / WithSecure",
+             "desc": "Prompt-injection evaluation and exploitation kit with dataset generation, Burp integration, and pluggable judges.",
+             "related": [PROMPTMAP]},
+            {"name": "promptmap", "repo": "utkusen/promptmap", "tags": "🟢⚠️",
+             "desc": "Prompt-injection scanner for custom LLM applications in white-box and black-box modes; GPL-3.0 licensed.",
+             "related": [SPIKEE]},
             {"name": "ai-prompt-fuzzer", "repo": "PortSwigger/ai-prompt-fuzzer", "tags": "🟢", "org": "PortSwigger",
              "desc": "Burp Suite extension fuzzing GenAI/LLM prompts."},
         ]),
@@ -271,6 +369,9 @@ SECTIONS.append((
         {"name": "MCP_Security", "repo": "fr0gger/MCP_Security", "tags": "🟢⚠️",
          "desc": "MCP server (ORKL) for querying the ORKL threat-intel API.",
          "related": [("IATelligence", GH + "fr0gger/IATelligence")]},
+        {"name": "threat-intelligence-cti-analysis", "repo": "AnandBinuArjun/threat-intelligence-cti-analysis", "tags": "🟢",
+         "desc": "NLP/LLM pipeline for IOC extraction, MITRE ATT&CK mapping, and knowledge-graph generation from unstructured CTI.",
+         "related": [("AI_SOC", GH + "zhadyz/AI_SOC")]},
     ],
     None,
 ))
@@ -282,8 +383,14 @@ SECTIONS.append((
     [
         {"name": "AI-SOC-Agent", "repo": "M507/ai-soc-agent", "tags": "🟢",
          "desc": "Black Hat 2025 MCP server exposing security-investigation tools (ELK, IRIS)."},
+        {"name": "AI_SOC", "repo": "zhadyz/AI_SOC", "tags": "🟢",
+         "desc": "AI-augmented SOC stack combining Wazuh, TheHive, RAG, alert explanation, MITRE mapping, and correlation.",
+         "related": [SIGMA_OPTIMIZER]},
         {"name": "agentic-soc-platform", "repo": "FunnyWolf/agentic-soc-platform", "tags": "🟢",
          "desc": "Agentic SOC platform (LangGraph/Dify) with local-LLM support."},
+        {"name": "SigmAIQ", "repo": "AttackIQ/SigmAIQ", "tags": "🟢⚠️", "org": "AttackIQ",
+         "desc": "pySigma wrapper and LangChain toolkit for automatic Sigma rule creation and translation; LGPL-2.1 licensed.",
+         "related": [SIGMA_OPTIMIZER]},
         {"name": "SOCGPT", "repo": "Ninadjos/SOCGPT-AI-Powered-SOC-Assistant", "tags": "🟢",
          "desc": "LLM log summarization, severity triage, MITRE mapping, and Q&A."},
         {"name": "AttackGen", "repo": "mrwadams/attackgen", "tags": "🟢",
@@ -299,12 +406,29 @@ SECTIONS.append((
     [
         {"name": "Gepetto", "repo": "JusticeRage/Gepetto", "tags": "🟢",
          "desc": "IDA Pro plugin: GPT adds comments and meaningful variable names."},
+        {"name": "ida-pro-mcp", "repo": "mrexodia/ida-pro-mcp", "tags": "🟢",
+         "desc": "MCP bridge for IDA Pro exposing decompile, disassemble, xref, rename, and debugging workflows to LLM clients."},
         {"name": "GhidraMCP", "repo": "LaurieWired/GhidraMCP", "tags": "🟢",
          "desc": "MCP server exposing Ghidra reverse-engineering ops to any MCP-capable LLM.",
          "related": [("GhidrOllama", GH + "lr-m/GhidrOllama"), ("OGhidra", GH + "llnl/OGhidra")]},
+        {"name": "ReVa", "repo": "cyberkaida/reverse-engineering-assistant", "tags": "🟢",
+         "desc": "Ghidra-focused reverse-engineering assistant with MCP support, Claude Skills integration, and long-form analysis workflows.",
+         "related": [("GhidraMCP", GH + "LaurieWired/GhidraMCP"), ("GhidrAssistMCP", GH + "symgraph/GhidrAssistMCP")]},
+        {"name": "GhidrAssistMCP", "repo": "symgraph/GhidrAssistMCP", "tags": "🟢",
+         "desc": "Native Ghidra MCP extension with broad tool coverage, headless support, and security-sensitive tool gating.",
+         "related": [("ReVa", GH + "cyberkaida/reverse-engineering-assistant"), ("ghidra-mcp", GH + "bethington/ghidra-mcp")]},
+        {"name": "ghidra-mcp", "repo": "bethington/ghidra-mcp", "tags": "🟢",
+         "desc": "Ghidra MCP server with large tool coverage, GUI plugin, headless server, and lazy tool loading.",
+         "related": [("GhidrAssistMCP", GH + "symgraph/GhidrAssistMCP")]},
         {"name": "GhidrOllama", "repo": "lr-m/GhidrOllama", "tags": "🟢⚠️",
          "desc": "Ghidra script using the Ollama API for function analysis/renaming.",
          "related": [("OGhidra", GH + "llnl/OGhidra"), ("GhidraMCP", GH + "LaurieWired/GhidraMCP")]},
+        {"name": "LLM4Decompile", "repo": "albertan017/LLM4Decompile", "tags": "🟢🔬⚠️",
+         "desc": "Research project for binary-to-C decompilation with LLMs; code is MIT, but model weights use a more restrictive license."},
+        {"name": "x64dbg_mcp", "repo": "bromoket/x64dbg_mcp", "tags": "🟢",
+         "desc": "MCP server exposing x64dbg debugging and reverse-engineering operations to AI clients."},
+        {"name": "binaryninja-mcp", "repo": "MCPPhalanx/binaryninja-mcp", "tags": "🟢",
+         "desc": "MCP server for Binary Ninja-assisted reverse engineering."},
         {"name": "OGhidra", "repo": "llnl/OGhidra", "tags": "🟢", "org": "Lawrence Livermore National Lab",
          "desc": "Natural-language Ghidra analysis via Ollama.",
          "related": [("GhidrOllama", GH + "lr-m/GhidrOllama"), ("GhidraMCP", GH + "LaurieWired/GhidraMCP")]},
@@ -327,42 +451,71 @@ SECTIONS.append((
     "llm-red-teaming--guardrails",
     "Tools for attacking and defending LLM applications themselves.",
     [
-        {"name": "garak", "repo": "NVIDIA/garak", "tags": "🟢", "org": "NVIDIA",
-         "desc": "The LLM vulnerability scanner — probes for prompt injection, jailbreaks, data leakage, and more.",
-         "related": [("PyRIT", GH + "microsoft/PyRIT"), ("promptfoo", GH + "promptfoo/promptfoo")]},
-        {"name": "PyRIT", "repo": "microsoft/PyRIT", "tags": "🟢", "org": "Microsoft",
-         "desc": "Python Risk Identification Tool; battle-tested across 100+ GenAI red-team operations."},
-        {"name": "promptfoo", "repo": "promptfoo/promptfoo", "tags": "🟢",
-         "desc": "LLM eval + red-teaming/pentesting CLI with 50+ attack plugins (MIT).",
-         "note": "*Note: OpenAI announced an acquisition agreement in March 2026; remains MIT-licensed — track governance.*"},
-        {"name": "DeepTeam", "repo": "confident-ai/deepteam", "tags": "🟢",
-         "desc": "Open-source framework for red-teaming LLMs and LLM systems across jailbreaks, prompt injection, data leakage, and safety risks."},
-        {"name": "Moonshot", "repo": "aiverify-foundation/moonshot", "tags": "🟢", "org": "AI Verify Foundation",
-         "desc": "Modular tool for benchmarking, red-teaming, and evaluating LLM applications with custom connectors and recipes."},
-        {"name": "LLM Guard", "repo": "protectai/llm-guard", "tags": "🟢", "org": "Protect AI",
-         "desc": "Suite of input/output scanners (PII, prompt injection, etc.).",
-         "related": [("Rebuff", GH + "protectai/rebuff")]},
-        {"name": "Rebuff", "repo": "protectai/rebuff", "tags": "🟢", "org": "Protect AI",
-         "desc": "Archived prompt-injection detector (heuristics + LLM + vector DB + canary tokens).",
-         "related": [("LLM Guard", GH + "protectai/llm-guard")]},
-        {"name": "NeMo Guardrails", "repo": "NVIDIA-NeMo/Guardrails", "tags": "🟢", "org": "NVIDIA",
-         "desc": "Programmable guardrails (input/output/dialog/retrieval rails) for LLM apps."},
-        {"name": "PurpleLlama", "repo": "meta-llama/PurpleLlama", "tags": "🟢", "org": "Meta",
-         "desc": "Llama Guard classifiers, CodeShield, and CyberSecEval."},
-        {"name": "Vigil", "repo": "deadbits/vigil-llm", "tags": "🟢🔬",
-         "desc": "Library/REST API to scan prompts and responses for prompt injection."},
-        {"name": "Counterfit", "repo": "Azure/counterfit", "tags": "🟢", "org": "Microsoft",
-         "desc": "ML/AI penetration-testing automation tool."},
-        {"name": "AI-Red-Teaming-Playground-Labs", "repo": "microsoft/AI-Red-Teaming-Playground-Labs", "tags": "🟢", "org": "Microsoft",
-         "desc": "CTFd-based AI red-team training challenges."},
-        {"name": "EasyJailbreak", "repo": "EasyJailbreak/EasyJailbreak", "tags": "🟢🔬",
-         "desc": "Framework for building and testing adversarial jailbreak prompts."},
-        {"name": "llm-security", "repo": "greshake/llm-security", "tags": "🔬",
-         "desc": "Original PoC for indirect prompt-injection attacks."},
-        {"name": "JailbreakLLMs", "repo": "TrustAIRLab/JailbreakLLMs", "tags": "🔬⚠️",
-         "desc": "Research dataset of 6,387 ChatGPT prompts, including in-the-wild jailbreak prompts from Reddit, Discord, websites, and open datasets."},
-        {"name": "prompt-injection-defenses", "repo": "tldrsec/prompt-injection-defenses", "tags": "🟢⚠️",
-         "desc": "Curated catalog of practical defenses against prompt injection."},
+        ("Scanners, Evals & Guardrails", [
+            {"name": "garak", "repo": "NVIDIA/garak", "tags": "🟢", "org": "NVIDIA",
+             "desc": "The LLM vulnerability scanner — probes for prompt injection, jailbreaks, data leakage, and more.",
+             "related": [("PyRIT", GH + "microsoft/PyRIT"), ("promptfoo", GH + "promptfoo/promptfoo")]},
+            {"name": "PyRIT", "repo": "microsoft/PyRIT", "tags": "🟢", "org": "Microsoft",
+             "desc": "Python Risk Identification Tool; battle-tested across 100+ GenAI red-team operations."},
+            {"name": "promptfoo", "repo": "promptfoo/promptfoo", "tags": "🟢",
+             "desc": "LLM eval + red-teaming/pentesting CLI with 50+ attack plugins (MIT).",
+             "note": "*Note: OpenAI announced an acquisition agreement in March 2026; remains MIT-licensed — track governance.*"},
+            {"name": "Augustus", "repo": "praetorian-inc/augustus", "tags": "🟢", "org": "Praetorian",
+             "desc": "Single-binary LLM security testing framework for prompt injection, jailbreaks, and adversarial attacks across many providers.",
+             "related": [("garak", GH + "NVIDIA/garak"), ("PyRIT", GH + "microsoft/PyRIT")]},
+            {"name": "agentic_security", "repo": "msoedov/agentic_security", "tags": "🟢",
+             "desc": "Agentic LLM vulnerability scanner and AI red-team kit for jailbreaks, prompt injection, fuzzing, and API stress testing.",
+             "related": [("garak", GH + "NVIDIA/garak"), SPIKEE]},
+            {"name": "DeepTeam", "repo": "confident-ai/deepteam", "tags": "🟢",
+             "desc": "Open-source framework for red-teaming LLMs and LLM systems across jailbreaks, prompt injection, data leakage, and safety risks."},
+            {"name": "Moonshot", "repo": "aiverify-foundation/moonshot", "tags": "🟢", "org": "AI Verify Foundation",
+             "desc": "Modular tool for benchmarking, red-teaming, and evaluating LLM applications with custom connectors and recipes."},
+            {"name": "LLM Guard", "repo": "protectai/llm-guard", "tags": "🟢", "org": "Protect AI",
+             "desc": "Suite of input/output scanners (PII, prompt injection, etc.).",
+             "related": [("Rebuff", GH + "protectai/rebuff")]},
+            {"name": "Rebuff", "repo": "protectai/rebuff", "tags": "🟢", "org": "Protect AI",
+             "desc": "Archived prompt-injection detector (heuristics + LLM + vector DB + canary tokens).",
+             "related": [("LLM Guard", GH + "protectai/llm-guard")]},
+            {"name": "NeMo Guardrails", "repo": "NVIDIA-NeMo/Guardrails", "tags": "🟢", "org": "NVIDIA",
+             "desc": "Programmable guardrails (input/output/dialog/retrieval rails) for LLM apps."},
+            {"name": "PurpleLlama", "repo": "meta-llama/PurpleLlama", "tags": "🟢", "org": "Meta",
+             "desc": "Llama Guard classifiers, CodeShield, and CyberSecEval."},
+            {"name": "LLAMATOR", "repo": "LLAMATOR-Core/llamator", "tags": "🟢⚠️",
+             "desc": "Red-teaming framework for chatbots and GenAI systems; CC BY-NC-SA 4.0 licensed."},
+            {"name": "Vigil", "repo": "deadbits/vigil-llm", "tags": "🟢🔬",
+             "desc": "Library/REST API to scan prompts and responses for prompt injection."},
+            {"name": "Counterfit", "repo": "Azure/counterfit", "tags": "🟢", "org": "Microsoft",
+             "desc": "ML/AI penetration-testing automation tool."},
+            {"name": "AI-Red-Teaming-Playground-Labs", "repo": "microsoft/AI-Red-Teaming-Playground-Labs", "tags": "🟢", "org": "Microsoft",
+             "desc": "CTFd-based AI red-team training challenges."},
+            {"name": "EasyJailbreak", "repo": "EasyJailbreak/EasyJailbreak", "tags": "🟢🔬",
+             "desc": "Framework for building and testing adversarial jailbreak prompts."},
+            {"name": "GPTFuzz", "repo": "sherdencooper/GPTFuzz", "tags": "🟢🔬",
+             "desc": "Research framework for red-teaming LLMs with auto-generated jailbreak prompts."},
+            {"name": "llm-security", "repo": "greshake/llm-security", "tags": "🔬",
+             "desc": "Original PoC for indirect prompt-injection attacks."},
+            {"name": "JailbreakLLMs", "repo": "TrustAIRLab/JailbreakLLMs", "tags": "🔬⚠️",
+             "desc": "Research dataset of 6,387 ChatGPT prompts, including in-the-wild jailbreak prompts from Reddit, Discord, websites, and open datasets."},
+            {"name": "prompt-injection-defenses", "repo": "tldrsec/prompt-injection-defenses", "tags": "🟢⚠️",
+             "desc": "Curated catalog of practical defenses against prompt injection."},
+        ]),
+        ("Prompt-Injection Classifier Models", [
+            {"kind": "hf_model", "name": "Wolf Defender Prompt Injection", "model": "patronus-studio/wolf-defender-prompt-injection", "tags": "🟢", "org": "Patronus AI",
+             "desc": "Hugging Face text-classification model for prompt-injection detection in agents, chatbots, and CI workflows.",
+             "license": "Apache-2.0", "access": "open", "artifacts": "Safetensors, ONNX"},
+            {"kind": "hf_model", "name": "DeBERTa v3 Prompt Injection v2", "model": "protectai/deberta-v3-base-prompt-injection-v2", "tags": "🟢", "org": "Protect AI",
+             "desc": "Apache-licensed prompt-injection classifier usable via Transformers pipelines and ONNX.",
+             "license": "Apache-2.0", "access": "open", "artifacts": "Safetensors, ONNX"},
+            {"kind": "hf_model", "name": "PromptGuard", "model": "codeintegrity-ai/promptguard", "tags": "🟢⚠️", "org": "CodeIntegrity AI",
+             "desc": "ModernBERT-based prompt-injection and jailbreak classifier.",
+             "license": "Apache-2.0", "access": "gated auto", "artifacts": "Safetensors"},
+            {"kind": "hf_model", "name": "Prompt Guard 86M", "model": "meta-llama/Prompt-Guard-86M", "tags": "🟠⚠️", "org": "Meta",
+             "desc": "Meta prompt-injection and jailbreak classifier from the Llama Guard family.",
+             "license": "Llama 3.1", "access": "gated manual", "artifacts": "Safetensors"},
+            {"kind": "hf_model", "name": "prompt-injection-sentinel", "model": "qualifire/prompt-injection-sentinel", "tags": "🔬⚠️", "org": "Qualifire",
+             "desc": "ModernBERT-large classifier for prompt-injection and jailbreak detection.",
+             "license": "other", "access": "gated auto", "artifacts": "Safetensors"},
+        ]),
     ],
     None,
 ))
@@ -374,6 +527,8 @@ SECTIONS.append((
     [
         {"name": "Beelzebub", "repo": "mariocandela/beelzebub", "tags": "🟢",
          "desc": "Low-code honeypot using LLMs to simulate SSH/HTTP/MCP services (Go)."},
+        {"name": "DECEIVE", "repo": "splunk/DECEIVE", "tags": "🟢🔬", "org": "Splunk",
+         "desc": "Proof-of-concept LLM-powered SSH honeypot that evaluates sessions as benign, suspicious, or malicious."},
         {"name": "shelLM", "repo": "stratosphereips/shelLM", "tags": "🟢🔬",
          "desc": "LLM-powered SSH honeypot (paper *\"LLM in the Shell\"*).",
          "related": [("VelLMes", GH + "stratosphereips/VelLMes-AI-Honeypot")]},
@@ -399,8 +554,13 @@ SECTIONS.append((
          "desc": "40 professional CTF tasks across 4 competitions; widely used by AI safety institutes."},
         {"name": "NYU CTF Bench", "repo": "NYU-LLM-CTF/NYU_CTF_Bench", "tags": "🔬",
          "desc": "Dockerized CSAW CTF challenges for LLM-agent evaluation."},
+        {"name": "CTFTiny", "repo": "NYU-LLM-CTF/CTFTiny", "tags": "🔬⚠️",
+         "desc": "Lightweight CTF benchmark from the NYU LLM CTF group; GPL-2.0 licensed.",
+         "related": [("NYU CTF Bench", GH + "NYU-LLM-CTF/NYU_CTF_Bench")]},
         {"name": "InterCode", "repo": "princeton-nlp/intercode", "tags": "🔬",
          "desc": "Interactive-coding benchmark incl. InterCode-CTF."},
+        {"name": "inspect_evals", "repo": "UKGovernmentBEIS/inspect_evals", "tags": "🟢🔬", "org": "UK AI Security Institute",
+         "desc": "Maintained Inspect AI evaluation suite containing multiple cyber benchmarks and tasks."},
         {"name": "BountyBench", "repo": "bountybench/bountybench", "tags": "🔬",
          "desc": "25 real systems / 40 bug bounties for Detect-Exploit-Patch evaluation."},
         {"name": "Cyber-Zero", "repo": "amazon-science/Cyber-Zero", "tags": "🔬", "org": "Amazon Science",
@@ -431,9 +591,15 @@ SECTIONS.append((
         {"name": "Volatility-MCP-Server", "repo": "bornpresident/Volatility-MCP-Server", "tags": "🟢",
          "desc": "MCP exposing Volatility 3 plugins for natural-language memory forensics.",
          "related": [("MemoryInvestigator", GH + "jan-hendrik-lang/MemoryInvestigator")]},
+        {"name": "llm_osint", "repo": "sshh12/llm_osint", "tags": "🟢🔬",
+         "desc": "Proof-of-concept LLM OSINT framework using knowledge and web agents for internet research workflows."},
+        {"name": "ai_osint", "repo": "7WaySecurity/ai_osint", "tags": "🟢",
+         "desc": "Curated AI-OSINT dorks, queries, and techniques for discovering exposed LLM and AI infrastructure."},
         {"name": "PhishLLM", "repo": "code-philia/PhishLLM", "tags": "🔬⚠️",
          "desc": "Reference-less phishing detection via LLM brand recognition (USENIX'24).",
          "related": [("PhishVLM", GH + "code-philia/PhishVLM")]},
+        {"name": "mcp-dnstwist", "repo": "BurtTheCoder/mcp-dnstwist", "tags": "🟢",
+         "desc": "MCP server for dnstwist DNS fuzzing to support typosquatting, phishing, and lookalike-domain analysis."},
         {"name": "osintgpt", "repo": "estebanpdl/osintgpt", "tags": "🟢⚠️",
          "desc": "OpenAI embeddings + Qdrant over OSINT corpora."},
         {"name": "gpt-osint", "repo": "gigz/gpt-osint", "tags": "🟢",
@@ -451,6 +617,9 @@ AWESOME = [
     ("awesome-ai-security", "gmh5225/awesome-ai-security", "For pentesters, bug hunters, and researchers."),
     ("awesome-ai-security", "ottosulin/awesome-ai-security", "AI security resources."),
     ("Awesome-AI-Security", "TalEliyahu/Awesome-AI-Security", "AI security resources."),
+    ("Awesome-AI-For-Security", "AmanPriyanshu/Awesome-AI-For-Security", "AI-for-security tools, papers, and datasets."),
+    ("awesome-cybersecurity-agentic-ai", "raphabot/awesome-cybersecurity-agentic-ai", "Agentic-AI cybersecurity tools and security MCP servers."),
+    ("open-source-llm-scanners", "psiinon/open-source-llm-scanners", "Open-source LLM scanners and testing tools."),
     ("awesome-llm-security", "corca-ai/awesome-llm-security", "Securing LLMs."),
     ("awesome-security-for-ai", "zmre/awesome-security-for-ai", "Products for securing AI systems."),
     ("awesome-gpt-security", "cckuailong/awesome-gpt-security", "GPT/LLM security tools and cases."),
@@ -469,7 +638,7 @@ def build():
     out.append("")
     out.append("**Type legend:** 🟢 public source / open-source · 🔬 research (paper / benchmark / dataset / framework) · 🟠 commercial with open components · ⚠️ restrictive, non-commercial, or unclear/no license — check before use.")
     out.append("")
-    out.append("Each entry shows live **★ stars** and **last-commit** badges (rendered from the GitHub API by shields.io). Ordering within a section favors flagship and actively maintained projects.")
+    out.append("GitHub-hosted entries show live **★ stars** and **last-commit** badges (rendered from the GitHub API by shields.io). Hugging Face model entries show license, access, and artifact metadata. Ordering within a section favors flagship and actively maintained projects.")
     out.append("")
     out.append("---")
     out.append("")
@@ -537,6 +706,8 @@ def build():
     out.append("```")
     out.append("")
     out.append("Guidelines: link the canonical upstream repo (not a fork); verify the URL resolves; tag the correct type and add ⚠️ for non-permissive, non-commercial, or unclear/no-license projects; prefer real, installable projects over blog-only references.")
+    out.append("")
+    out.append("For Hugging Face model entries, include the model id, license, access status (open/gated), and artifact formats (for example Safetensors or ONNX).")
     out.append("")
     out.append("## License")
     out.append("")
