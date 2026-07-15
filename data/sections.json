@@ -462,20 +462,24 @@
             {
               "name": "Sunglasses",
               "repo": "sunglasses-dev/sunglasses",
-              "desc": "Runtime trust scanner for AI agents that checks skills, prompts, and tool descriptions against 1,089 patterns in 65 attack categories plus a mechanism layer, shipped as a pip package, GitHub Action, and free web scanner with a published precision/recall benchmark.",
+              "desc": "Local input/content scanner for AI agents that checks prompts, files, media metadata, skills, and tool descriptions against pattern and mechanism-based prompt-injection, exfiltration, command-injection, and agent-threat rules.",
               "status": [
                 "open_source"
               ],
               "license": "MIT",
               "related": [
                 {
-                  "label": "agentic-radar",
-                  "url": "https://github.com/splx-ai/agentic-radar"
+                  "label": "skilltotal",
+                  "url": "https://github.com/pezhik/skilltotal"
                 },
                 {
-                  "label": "Snyk Agent Scan",
-                  "url": "https://github.com/snyk/agent-scan"
+                  "label": "Armorer Guard",
+                  "url": "https://github.com/ArmorerLabs/Armorer-Guard"
                 }
+              ],
+              "note": "— **note:** early-stage project; published precision/recall benchmark is self-reported by the project.",
+              "flags": [
+                "early_stage"
               ]
             }
           ]
