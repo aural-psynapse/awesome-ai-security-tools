@@ -458,6 +458,25 @@
                   "url": "https://github.com/cisco-ai-defense/mcp-scanner"
                 }
               ]
+            },
+            {
+              "name": "Sunglasses",
+              "repo": "sunglasses-dev/sunglasses",
+              "desc": "Runtime trust scanner for AI agents that checks skills, prompts, and tool descriptions against 1,089 patterns in 65 attack categories plus a mechanism layer, shipped as a pip package, GitHub Action, and free web scanner with a published precision/recall benchmark.",
+              "status": [
+                "open_source"
+              ],
+              "license": "MIT",
+              "related": [
+                {
+                  "label": "agentic-radar",
+                  "url": "https://github.com/splx-ai/agentic-radar"
+                },
+                {
+                  "label": "Snyk Agent Scan",
+                  "url": "https://github.com/snyk/agent-scan"
+                }
+              ]
             }
           ]
         },
